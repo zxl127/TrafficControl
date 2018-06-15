@@ -56,6 +56,27 @@ void tm_upate_list(pool_t *monitor, pool_t *arp)
     }
 }
 
+void tm_print_traffic(pool_t *monitor)
+{
+    mem_t *m;
+    struct monitor_entry *m_entry;
+
+    // Reset cursor
+    printf("\033[H");
+    // Hide cursor
+    printf("\033[?25l");
+    // Clear screen
+    printf("\033[2J");
+    printf("%-17s\t%-15s\t%-16s\t%-16s\n", "mac", "ip", "upload bytes", "download bytes");
+    list_for_each_entry(m, &monitor->used_list, list) {
+        m_entry = m->mem;
+        printf("%-17s\t", mac2str(m_entry->mac));
+        printf("%-15s\t", inet_ntoa(m_entry->ip));
+        printf("%-16d\t", m_entry->upload_bytes);
+        printf("%-16d\n", m_entry->download_bytes);
+    }
+}
+
 void tm_update_traffic(pool_t *monitor)
 {
     mem_t *m;

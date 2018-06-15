@@ -23,5 +23,6 @@ struct monitor_entry
 void tm_add_entry(pool_t *monitor, struct monitor_entry *entry);
 void tm_upate_list(pool_t *monitor, pool_t *arp);
 void tm_update_traffic(pool_t *monitor);
+void tm_print_traffic(pool_t *monitor);
 void tm_update_iptables(pool_t *monitor);
 int test_counter(void);
