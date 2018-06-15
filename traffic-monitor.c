@@ -58,15 +58,34 @@ void tm_upate_list(pool_t *monitor, pool_t *arp)
 
 void tm_update_traffic(pool_t *monitor)
 {
-    struct iptc_handle *handle;
     mem_t *m;
+    unsigned int rulenum;
+    struct iptc_handle *handle;
     struct monitor_entry *m_entry;
     struct ipt_entry *rule;
+    struct xt_counters *xtc;
 
     handle = iptc_init("filter");
     if(!handle)
         return;
-
+#if 1
+    rulenum = 1;
+    list_for_each_entry(m, &monitor->used_list, list) {
+        m_entry = m->mem;
+        xtc = iptc_read_counter(TRAFFIC_IN_CHAIN, rulenum, handle);
+        if(xtc) {
+            m_entry->download_bytes = xtc->bcnt;
+            m_entry->download_packets = xtc->pcnt;
+        }
+        xtc = iptc_read_counter(TRAFFIC_OUT_CHAIN, rulenum, handle);
+        if(xtc) {
+            m_entry->upload_bytes = xtc->bcnt;
+            m_entry->upload_packets = xtc->pcnt;
+        }
+        rulenum++;
+    }
+#endif
+#if 0
     rule = iptc_first_rule(TRAFFIC_IN_CHAIN, handle);
     if(!rule)
         goto end;
@@ -90,6 +109,7 @@ void tm_update_traffic(pool_t *monitor)
         if(!rule)
             break;
     }
+#endif
 end:
     iptc_free(handle);
 }
