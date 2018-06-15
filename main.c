@@ -9,10 +9,12 @@
 static int exitProgram = false;
 
 struct option long_opts[] = {
-    {"foregroud", no_argument, NULL, 'f'},
-    {"interval", no_argument, NULL, 't'},
-    {"help", no_argument, NULL, 'h'},
-    {NULL, 0, NULL, 0}
+    {"end-time", required_argument, NULL, '1'},
+    {"foregroud", no_argument, NULL, '2'},
+    {"help", no_argument, NULL, '3'},
+    {"max-bytes", required_argument, NULL, '4'},
+    {"start-time", required_argument, NULL, '5'},
+    {NULL}
 };
 
 static void print_help(char *name)
@@ -28,30 +30,47 @@ int main(int argc, char **argv)
 {
     int c;
     bool foreground = false;
+    bool is_server = false;
     pool_t arp, monitor;
-    mem_t *mm;
-    struct arp_info_entry *entry;
-    struct monitor_entry *m_entry;
 
-    /*
     while(1) {
-        c = getopt_long(argc, argv, "fht", long_opts, NULL);
+        c = getopt_long(argc, argv, "A:D:fFhi:o:S", long_opts, NULL);
         if(c == EOF)
             break;
         switch (c) {
+        case 'A':
+            break;
+        case 'D':
+            break;
         case 'f':
             foreground = true;
+            break;
+        case 'F':
             break;
         case 'h':
             print_help(argv[0]);
             exit(EXIT_SUCCESS);
             break;
-        case 't':
+        case 'i':
+            break;
+        case 'o':
+            break;
+        case 'S':
+            is_server = true;
+            break;
+        case '1':
+            break;
+        case '2':
+            break;
+        case '3':
+            break;
+        case '4':
+            break;
+        case '5':
             break;
         default:
             print_help(argv[0]);
             exit(EXIT_FAILURE);
-            break;
         }
     }
 
