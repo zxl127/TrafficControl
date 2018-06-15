@@ -54,31 +54,16 @@ int main(int argc, char **argv)
             break;
         }
     }
-    */
-#if 1
+
     init_pool(&arp, 10, sizeof(struct arp_info_entry));
     init_pool(&monitor, 10, sizeof(struct monitor_entry));
 
     while(!exitProgram)
     {
-        arp.del_all(&arp);
         tm_update_traffic(&monitor);
+        tm_print_traffic(&monitor);
         init_arp_cache_list(&arp);
-//        printf("########arp table########\n");
-        list_for_each_entry(mm, &arp.used_list, list) {
-            entry = mm->mem;
-//            printf("%s\t", inet_ntoa(entry->ip));
-//            printf("%s\n", mac2str(entry->mac));
-        }
         tm_upate_list(&monitor, &arp);
-        printf("########monitor table########\n");
-        list_for_each_entry(mm, &monitor.used_list, list) {
-            m_entry = mm->mem;
-            printf("%s\t", inet_ntoa(m_entry->ip));
-            printf("%s\t", mac2str(m_entry->mac));
-            printf("%d\t", m_entry->download_bytes);
-            printf("%d\n", m_entry->upload_bytes);
-        }
         tm_update_iptables(&monitor);
 
         sleep(4);
@@ -86,8 +71,6 @@ int main(int argc, char **argv)
 
     free_pool(&monitor);
     free_pool(&arp);
-#endif
-//    test_counter();
 
     return 0;
 }
