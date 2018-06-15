@@ -86,6 +86,7 @@ int init_arp_cache_list(pool_t *arp)
     int num;
     struct arp_info_entry entry;
 
+    arp->del_all(arp);
     fp = fopen("/proc/net/arp", "r");
     if(!fp) {
         perror("Open arp file error");
