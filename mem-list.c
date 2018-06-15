@@ -24,14 +24,14 @@ static void pool_del_mem(pool_t *pool, mem_t *m)
 {
     mem_t *mem, *tmp;
 
-    list_for_each_entry_safe(mem, tmp, &pool->used_list, list) {
-        if(m == mem) {
-            list_del(&mem->list);
-            list_add_tail(&mem->list, &pool->free_list);
+//    list_for_each_entry_safe(mem, tmp, &pool->used_list, list) {
+//        if(m == mem) {
+            list_del(&m->list);
+            list_add_tail(&m->list, &pool->free_list);
             pool->free_size++;
             pool->used_size--;
-        }
-    }
+//        }
+//    }
 }
 
 static void pool_del_all(pool_t *pool)
