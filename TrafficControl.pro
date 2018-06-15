@@ -12,7 +12,10 @@ SOURCES += main.c \
     util.c \
     web.c \
     traffic-rules.c \
-    mem-list.c
+    mem-list.c \
+    utask.c \
+    usock.c \
+    server.c
 
 HEADERS += \
     list.h \
@@ -30,4 +33,7 @@ HEADERS += \
     web.h \
     traffic-rules.h \
     mem-list.h \
-    traffic-monitor.h
+    traffic-monitor.h \
+    utask.h \
+    usock.h \
+    server.h
