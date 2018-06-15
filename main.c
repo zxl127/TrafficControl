@@ -5,6 +5,8 @@
 #include <getopt.h>
 #include <traffic-monitor.h>
 
+#include "utask.h"
+
 
 static int exitProgram = false;
 
@@ -87,6 +89,9 @@ int main(int argc, char **argv)
 
         sleep(4);
     }
+    utasks_init();
+    utasks_loop();
+    utasks_done();
 
     free_pool(&monitor);
     free_pool(&arp);
