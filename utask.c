@@ -1,14 +1,16 @@
-#include "utask.h"
 #include <stdio.h>
+#include <string.h>
 #include <signal.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/epoll.h>
 #include <sys/wait.h>
+#include "utask.h"
 
-#define USE_EPOLL_PROTO
-//#define USE_SELECT_PROTO
+//#define USE_EPOLL_PROTO
+#define USE_SELECT_PROTO
 
 #define MAX_EVENTS          10
 #define ARRAY_SIZE(arr)     (sizeof(arr) / sizeof((arr)[0]))
@@ -208,12 +210,13 @@ static int register_poll(ufd_t *fd, unsigned int events)
 
 int ufd_add(ufd_t *fd, unsigned int events)
 {
-    unsigned int fl;
+    int fl;
     int ret;
 
-    if(!fd)
+    if(!fd || fd->registered)
         return -1;
-    if (!fd->registered) {
+
+    if (events & EVENT_NONBLOCK) {
         fl = fcntl(fd->fd, F_GETFL, 0);
         fl |= O_NONBLOCK;
         fcntl(fd->fd, F_SETFL, fl);
@@ -331,15 +334,17 @@ static int register_poll(ufd_t *fd, unsigned int events)
 
 int ufd_add(ufd_t *fd, unsigned int events)
 {
-    unsigned int fl;
+    int fl;
     int ret;
 
     if(!fd || fd->registered)
         return -1;
 
-    fl = fcntl(fd->fd, F_GETFL, 0);
-    fl |= O_NONBLOCK;
-    fcntl(fd->fd, F_SETFL, fl);
+    if (events & EVENT_NONBLOCK) {
+        fl = fcntl(fd->fd, F_GETFL, 0);
+        fl |= O_NONBLOCK;
+        fcntl(fd->fd, F_SETFL, fl);
+    }
 
     ret = register_poll(fd, events);
     if (ret < 0)
@@ -371,7 +376,7 @@ int ufd_delete(ufd_t *fd)
             else
                 sel_fds[i] = sel_fds[i + 1];
         }
-        if(max < sel_fds[i]->fd)
+        if(sel_fds[i] && max < sel_fds[i]->fd)
             max = sel_fds[i]->fd;
     }
     max_fd = max;
@@ -474,6 +479,9 @@ void utasks_loop(void)
 
 void utasks_done(void)
 {
+    int i;
+    ufd_t *ufd;
+
 #ifdef USE_EPOLL_PROTO
     if (poll_fd >= 0) {
         close(poll_fd);
@@ -481,5 +489,11 @@ void utasks_done(void)
     }
 #endif
 
+    for(i = 0; i < MAX_EVENTS; ++i) {
+        ufd = cur_fds[i];
+        if(ufd && ufd->fd >= 0) {
+            close(ufd->fd);
+        }
+    }
     clear_all_timer();
 }

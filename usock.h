@@ -12,6 +12,7 @@
 #define USOCK_IPV4ONLY		0x4000
 #define USOCK_UNIX			0x8000
 
+void usock_set_flags(int sock, unsigned int type);
 int usock(int type, const char *host, const char *service);
 
 #endif // USOCK_H

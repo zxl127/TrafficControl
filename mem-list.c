@@ -1,4 +1,6 @@
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 #include <mem-list.h>
 
 static int pool_add_mem(pool_t *pool, void *mem, int size)
@@ -22,7 +24,7 @@ static int pool_add_mem(pool_t *pool, void *mem, int size)
 
 static void pool_del_mem(pool_t *pool, mem_t *m)
 {
-    mem_t *mem, *tmp;
+//    mem_t *mem, *tmp;
 
 //    list_for_each_entry_safe(mem, tmp, &pool->used_list, list) {
 //        if(m == mem) {

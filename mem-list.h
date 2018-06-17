@@ -21,5 +21,5 @@ struct __pool_def {
     void (*del_all)(pool_t *pool);
 };
 
-void init_pool(pool_t *head, int n, int size);
-void free_pool(pool_t *head);
+void init_pool(pool_t *pool, int n, int size);
+void free_pool(pool_t *pool);

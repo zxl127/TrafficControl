@@ -1,10 +1,14 @@
-#include <traffic-rules.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <errno.h>
+#include <arpa/inet.h>
+#include "traffic-rules.h"
 
 
-int tm_add_ipt_entry(const xt_chainlabel *chain, const struct ipt_entry *e, struct xtc_handle *handle)
+int tm_add_ipt_entry(const xt_chainlabel chain, const struct ipt_entry *e, struct xtc_handle *handle)
 {
-    if(!handle || !e || !chain)
+    if(!handle || !e)
         return false;
 
     if(!iptc_append_entry(chain, e, handle)) {
@@ -19,12 +23,12 @@ int tm_add_ipt_entry(const xt_chainlabel *chain, const struct ipt_entry *e, stru
     return true;
 }
 
-int tm_del_ipt_entry(const xt_chainlabel *chain, const struct ipt_entry *e, struct xtc_handle *handle)
+int tm_del_ipt_entry(const xt_chainlabel chain, const struct ipt_entry *e, struct xtc_handle *handle)
 {
-    if (!e || !chain, !handle)
+    if (!e || !handle)
         return false;
 
-    if(!iptc_delete_entry(chain, e, "", handle)) {
+    if(!iptc_delete_entry(chain, e, (unsigned char *)"", handle)) {
         printf("%s\n", iptc_strerror(errno));
         return false;
     }
@@ -47,7 +51,7 @@ struct ipt_entry *tm_get_entry(struct sockaddr_in src, struct sockaddr_in dst, c
 
     fw = calloc(1, entry_size + target_size);
     if ( !fw ) {
-        printf("Malloc failure");
+        printf("Malloc failure\n");
         return NULL;
     }
 
@@ -76,14 +80,11 @@ struct ipt_entry *tm_get_entry(struct sockaddr_in src, struct sockaddr_in dst, c
     return fw;
 }
 
-struct ipt_entry *tm_get_jump_entry(const xt_chainlabel *chain)
+struct ipt_entry *tm_get_jump_entry(const xt_chainlabel chain)
 {
     __u16 entry_size, target_size;
     struct ipt_entry *fw;
     struct ipt_entry_target *target;
-
-    if(!chain)
-        return NULL;
 
     entry_size = XT_ALIGN(sizeof(struct ipt_entry));
     target_size = XT_ALIGN(sizeof(struct ipt_entry_target) + sizeof(int));
@@ -118,7 +119,7 @@ int tm_init_all_chain(struct iptc_handle *handle)
 
     fw = tm_get_jump_entry(TRAFFIC_IN_CHAIN);
     if(fw) {
-        if(!iptc_check_entry("OUTPUT", fw, "", handle)) {
+        if(!iptc_check_entry("OUTPUT", fw, (unsigned char *)"", handle)) {
             if(!iptc_insert_entry("OUTPUT", fw, 0, handle))
                 goto end;
         }
@@ -127,7 +128,7 @@ int tm_init_all_chain(struct iptc_handle *handle)
 
     fw = tm_get_jump_entry(TRAFFIC_OUT_CHAIN);
     if(fw) {
-        if(!iptc_check_entry("INPUT", fw, "", handle)) {
+        if(!iptc_check_entry("INPUT", fw, (unsigned char *)"", handle)) {
             if(!iptc_insert_entry("INPUT", fw, 0, handle))
                 goto end;
         }

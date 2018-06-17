@@ -11,7 +11,7 @@
 
 #include "usock.h"
 
-static void usock_set_flags(int sock, unsigned int type)
+void usock_set_flags(int sock, unsigned int type)
 {
     if (!(type & USOCK_NOCLOEXEC))
         fcntl(sock, F_SETFD, fcntl(sock, F_GETFD) | FD_CLOEXEC);

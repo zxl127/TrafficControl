@@ -7,5 +7,5 @@
 #define TRAFFIC_IN_CHAIN    "TRAFFIC_IN"
 
 struct ipt_entry *tm_get_entry(struct sockaddr_in src, struct sockaddr_in dst, const char *label);
-struct ipt_entry *tm_get_jump_entry(const xt_chainlabel *chain);
+struct ipt_entry *tm_get_jump_entry(const xt_chainlabel chain);
 int tm_init_all_chain(struct iptc_handle *handle);
