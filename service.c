@@ -266,7 +266,6 @@ void apply_client_settings(struct traffic_setting *setting, pool_t *monitor)
         monitor->del_all(monitor);
         break;
     default:
-        printf("Invalid method\n");
         break;
     }
     if(setting->refresh_time >= 1000)
