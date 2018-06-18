@@ -39,12 +39,19 @@ void traffic_refresh_timeout(utimer_t *t)
 {
     tm_update_traffic(&monitor);
     tm_print_traffic(&monitor);
-    tm_update_arp_list(&arp);
-    tm_update_monitor_list(&monitor, &arp);
-    tm_update_iptables(&monitor);
     tm_output_traffic_info(&monitor, global.output_file);
 
     utimer_set(t, global.refresh_time);
+    utimer_add(t);
+}
+
+void update_iptables_timeout(utimer_t *t)
+{
+    tm_update_arp_list(&arp);
+    if(tm_update_monitor_list(&monitor, &arp) == true)
+        tm_update_iptables(&monitor);
+
+    utimer_set(t, 5000);
     utimer_add(t);
 }
 
@@ -54,6 +61,7 @@ int main(int argc, char **argv)
     bool foreground = false;
     bool isServer = false;
     utimer_t refresh_timer = {.handler = traffic_refresh_timeout};
+    utimer_t iptables_timer = {.handler = update_iptables_timeout};
 
     memset(&global, 0, sizeof(global));
 
@@ -176,8 +184,10 @@ int main(int argc, char **argv)
 
     if(global.refresh_time == 0)
         global.refresh_time = 3000;
-    utimer_set(&refresh_timer, global.refresh_time);
+    utimer_set(&refresh_timer, 10);
     utimer_add(&refresh_timer);
+    utimer_set(&iptables_timer, 20);
+    utimer_add(&iptables_timer);
 
     utasks_loop();
     utasks_done();

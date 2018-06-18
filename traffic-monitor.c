@@ -2,6 +2,7 @@
 #include "traffic-rules.h"
 #include "traffic-monitor.h"
 
+extern struct traffic_setting global;
 
 void tm_add_entry(pool_t *monitor, struct monitor_entry *entry)
 {
@@ -114,8 +115,9 @@ int tm_update_ipt_list(pool_t *ipt, const char *chain)
 }
 
 
-void tm_update_monitor_list(pool_t *monitor, pool_t *arp)
+int tm_update_monitor_list(pool_t *monitor, pool_t *arp)
 {
+    int changed = false;
     int find = false;
     mem_t *mm, *ma, *tmp;
     struct monitor_entry *monitor_entry, m_entry;
@@ -127,7 +129,10 @@ void tm_update_monitor_list(pool_t *monitor, pool_t *arp)
         list_for_each_entry(ma, &arp->used_list, list) {
             arp_entry = ma->mem;
             if(memcmp(arp_entry->mac, monitor_entry->mac, ETH_ALEN) == 0) {
-                monitor_entry->ip = arp_entry->ip;
+                if(monitor_entry->ip.s_addr != arp_entry->ip.s_addr) {
+                    monitor_entry->ip = arp_entry->ip;
+                    changed = true;
+                }
                 arp->del_mem(arp, ma);
                 find = true;
                 break;
@@ -135,6 +140,7 @@ void tm_update_monitor_list(pool_t *monitor, pool_t *arp)
         }
         if(!find && !monitor_entry->enabledCtrl) {
             monitor->del_mem(monitor, mm);
+            changed = true;
         }
     }
 
@@ -144,7 +150,10 @@ void tm_update_monitor_list(pool_t *monitor, pool_t *arp)
         memcpy(m_entry.mac, arp_entry->mac, ETH_ALEN);
         m_entry.ip = arp_entry->ip;
         monitor->add_mem(monitor, &m_entry, sizeof(m_entry));
+        changed = true;
     }
+
+    return changed;
 }
 
 void tm_print_traffic(pool_t *monitor)
@@ -190,16 +199,16 @@ void tm_print_traffic(pool_t *monitor)
 void tm_update_traffic(pool_t *monitor)
 {
     mem_t *m;
-    unsigned int rulenum;
+//    unsigned int rulenum;
     struct iptc_handle *handle;
     struct monitor_entry *m_entry;
-//    struct ipt_entry *rule;
-    struct xt_counters *xtc;
+    const struct ipt_entry *rule;
+//    struct xt_counters *xtc;
 
     handle = iptc_init("filter");
     if(!handle)
         return;
-#if 1
+#if 0
     rulenum = 1;
     list_for_each_entry(m, &monitor->used_list, list) {
         m_entry = m->mem;
@@ -216,30 +225,29 @@ void tm_update_traffic(pool_t *monitor)
         rulenum++;
     }
 #else
-    rule = iptc_first_rule(TRAFFIC_IN_CHAIN, handle);
-    if(!rule)
-        goto end;
     list_for_each_entry(m, &monitor->used_list, list) {
         m_entry = m->mem;
-        m_entry->download_bytes = rule->counters.bcnt;
-        m_entry->download_packets = rule->counters.pcnt;
-        rule = iptc_next_rule(rule, handle);
-        if(!rule)
-            break;
+        for(rule = iptc_first_rule(TRAFFIC_IN_CHAIN, handle); rule; rule = iptc_next_rule(rule, handle)) {
+            if(m_entry->ip.s_addr == rule->ip.dst.s_addr && rule->ip.src.s_addr == INADDR_ANY) {
+                m_entry->downlink = (__u32)((rule->counters.bcnt - m_entry->download_bytes) * 1.0 / (global.refresh_time * 1.0 / 1000));
+                m_entry->download_bytes = rule->counters.bcnt;
+                m_entry->download_packets = rule->counters.pcnt;
+                break;
+            }
+        }
     }
 
-    rule = iptc_first_rule(TRAFFIC_OUT_CHAIN, handle);
-    if(!rule)
-        goto end;
     list_for_each_entry(m, &monitor->used_list, list) {
         m_entry = m->mem;
-        m_entry->upload_bytes = rule->counters.bcnt;
-        m_entry->upload_packets = rule->counters.pcnt;
-        rule = iptc_next_rule(rule, handle);
-        if(!rule)
-            break;
+        for(rule = iptc_first_rule(TRAFFIC_OUT_CHAIN, handle); rule; rule = iptc_next_rule(rule, handle)) {
+            if(m_entry->ip.s_addr == rule->ip.src.s_addr && rule->ip.dst.s_addr == INADDR_ANY) {
+                m_entry->uplink = (__u32)((rule->counters.bcnt - m_entry->upload_bytes) * 1.0 / (global.refresh_time * 1.0 / 1000));
+                m_entry->upload_bytes = rule->counters.bcnt;
+                m_entry->upload_packets = rule->counters.pcnt;
+                break;
+            }
+        }
     }
-end:
 #endif
     iptc_free(handle);
 }
@@ -247,11 +255,9 @@ end:
 void tm_update_iptables(pool_t *monitor)
 {
     char *label;
-    int rulenum;
-    int ok;
     struct iptc_handle *handle;
-    struct ipt_entry *fw;
-    struct xt_counters xtc;
+    struct ipt_entry *rule;
+//    struct xt_counters xtc;
     mem_t *m;
     struct monitor_entry *me;
     struct sockaddr_in sin1, sin2;
@@ -261,14 +267,16 @@ void tm_update_iptables(pool_t *monitor)
         printf("%s\n", iptc_strerror(errno));
         return;
     }
-    ok = tm_init_all_chain(handle);
-    if(!ok)
+    if(tm_init_all_chain(handle) == false)
+        goto end;
+
+    rule = calloc(1, XT_ALIGN(sizeof(struct ipt_entry)) + XT_ALIGN(sizeof(struct ipt_entry_target) + sizeof(int)));
+    if(!rule)
         goto end;
 
     sin1.sin_port = -1;
     sin2.sin_addr.s_addr = htonl(INADDR_ANY);
     sin2.sin_port = -1;
-    rulenum = 1;
     list_for_each_entry(m, &monitor->used_list, list) {
         me = m->mem;
         sin1.sin_addr = me->ip;
@@ -278,27 +286,20 @@ void tm_update_iptables(pool_t *monitor)
             label = NULL;
         }
 
-        fw = tm_get_entry(sin1, sin2, label);
-        if(fw) {
-            iptc_append_entry(TRAFFIC_OUT_CHAIN, fw, handle);
-            xtc.pcnt = me->upload_packets;
-            xtc.bcnt = me->upload_bytes;
-//            printf("upload: %d, %d\n", xtc.bcnt, xtc.pcnt);
-            iptc_set_counter(TRAFFIC_OUT_CHAIN, rulenum, &xtc, handle);
-            free(fw);
-        }
-        fw = tm_get_entry(sin2, sin1, label);
-        if(fw) {
-            iptc_append_entry(TRAFFIC_IN_CHAIN, fw, handle);
-            xtc.pcnt = me->download_packets;
-            xtc.bcnt = me->download_bytes;
-//            printf("download: %d, %d\n", xtc.bcnt, xtc.pcnt);
-            iptc_set_counter(TRAFFIC_IN_CHAIN, rulenum, &xtc, handle);
-            free(fw);
-        }
-        rulenum++;
+        tm_set_entry(sin1, sin2, label, rule);
+        rule->counters.bcnt = me->upload_bytes;
+        rule->counters.pcnt = me->upload_packets;
+        iptc_append_entry(TRAFFIC_OUT_CHAIN, rule, handle);
+//        printf("upload: %d, %d\n", xtc.bcnt, xtc.pcnt);
+
+        tm_set_entry(sin2, sin1, label, rule);
+        rule->counters.bcnt = me->download_bytes;
+        rule->counters.pcnt = me->download_packets;
+        iptc_append_entry(TRAFFIC_IN_CHAIN, rule, handle);
+//        printf("download: %d, %d\n", xtc.bcnt, xtc.pcnt);
     }
     iptc_commit(handle);
+    free(rule);
 
 end:
     iptc_free(handle);

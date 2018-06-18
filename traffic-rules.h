@@ -8,8 +8,8 @@
 #define TRAFFIC_OUT_CHAIN   "TRAFFIC_OUT"
 #define TRAFFIC_IN_CHAIN    "TRAFFIC_IN"
 
-struct ipt_entry *tm_get_entry(struct sockaddr_in src, struct sockaddr_in dst, const char *label);
-struct ipt_entry *tm_get_jump_entry(const xt_chainlabel chain);
+void tm_set_entry(struct sockaddr_in src, struct sockaddr_in dst, const char *label, struct ipt_entry *rule);
+void tm_set_jump_entry(const xt_chainlabel chain, struct ipt_entry *rule);
 int tm_init_all_chain(struct iptc_handle *handle);
 
 #endif
