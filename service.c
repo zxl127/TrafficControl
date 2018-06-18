@@ -1,19 +1,15 @@
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <netdb.h>
-#include <fcntl.h>
 #include "utask.h"
 #include "usock.h"
+#include "util.h"
 #include "json.h"
 #include "service.h"
+#include "traffic-monitor.h"
 
 #define TRAFFIC_CONTROL_SOCKET      "/home/philips/traffic.socket"
 
 extern pool_t monitor;
 extern struct traffic_setting global;
+
 
 int response_client_request(FILE *f, int success, const char *msg)
 {
@@ -281,6 +277,7 @@ void process_client_request(ufd_t *f)
     if(!fp)
         goto end;
 
+    memset(&setting, 0, sizeof(setting));
     if(parse_client_request(fp, &setting) == false) {
         response_client_request(fp, false, "Parse settings error");
     } else {

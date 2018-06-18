@@ -3,7 +3,7 @@
 #include <string.h>
 #include <mem-list.h>
 
-static int pool_add_mem(pool_t *pool, void *mem, int size)
+static int pool_add_mem(pool_t *pool, void *mem, unsigned int size)
 {
     mem_t *m;
 
@@ -48,9 +48,9 @@ static void pool_del_all(pool_t *pool)
     pool->used_size = 0;
 }
 
-static int pool_calloc(pool_t *pool, int n, int size)
+static int pool_calloc(pool_t *pool, unsigned int n, unsigned int size)
 {
-    int i;
+    unsigned int i;
     void *mem;
     mem_t *m;
 
@@ -76,7 +76,7 @@ static int pool_calloc(pool_t *pool, int n, int size)
     return true;
 }
 
-void init_pool(pool_t *pool, int n, int size)
+void init_pool(pool_t *pool, unsigned int n, unsigned int size)
 {
     pool->mem = 0;
     pool->mem_list = 0;

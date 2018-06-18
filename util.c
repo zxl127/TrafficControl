@@ -1,12 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include <string.h>
 #include <errno.h>
 #include <regex.h>
-#include <time.h>
 #include "util.h"
-#include "json.h"
 
 
 
@@ -145,85 +142,6 @@ const char *getTrafficIptEntry(const char *chain, const char *ip, bool sIp)
     return entry;
 }
 
-int parse_arp_cache_list(pool_t *arp)
-{
-    FILE *fp;
-    char line[128];
-    char ip[128];
-    char hwa[128];
-    char mask[128];
-    char dev[128];
-    int type, flags;
-    int num;
-    struct arp_info_entry entry;
-
-    arp->del_all(arp);
-    fp = fopen("/proc/net/arp", "r");
-    if(!fp) {
-        perror("Open arp file error");
-        return false;
-    }
-
-    fgets(line, sizeof(line), fp);
-    while (fgets(line, sizeof(line), fp)) {
-        mask[0] = '-'; mask[1] = '\0';
-        dev[0] = '-'; dev[1] = '\0';
-
-        num = sscanf(line, "%s 0x%x 0x%x %s %s %s\n",
-                     ip, &type, &flags, hwa, mask, dev);
-        if (num < 4) {
-            break;
-        }
-
-        entry.ip.s_addr = inet_addr(ip);
-        memcpy(entry.mac, str2mac(hwa), ETH_ALEN);
-        snprintf(entry.dev, 32, "%s", dev);
-        arp->add_mem(arp, &entry, sizeof(entry));
-    }
-    fclose(fp);
-
-    return true;
-}
-
-int init_ipt_list(pool_t *ipt, const char *chain)
-{
-    FILE *fp;
-    int num;
-    char cmd[128];
-    char line[128];
-    struct ipt_info_entry entry;
-    char pkts[32], bytes[32];
-    char buf1[32], buf2[32], buf3[32];
-
-    sprintf(cmd, "echo \"7890\" | sudo -S iptables -vxnL %s", chain);
-    fp = popen(cmd, "r");
-    if(!fp) {
-        return false;
-    }
-
-    fgets(line, sizeof(line), fp);
-    fgets(line, sizeof(line), fp);
-    while(fgets(line, sizeof(line), fp)) {
-        num = sscanf(line, "%s %s %*s %*s %*s %*s %s %s %s",
-                     pkts, bytes, buf1, buf2, buf3);
-        if(num < 4) {
-            break;
-        }
-        if(num == 4) {
-            entry.sIp.s_addr = inet_addr(buf1);
-            entry.dIp.s_addr = inet_addr(buf2);
-        } else {
-            entry.sIp.s_addr = inet_addr(buf2);
-            entry.dIp.s_addr = inet_addr(buf3);
-        }
-        entry.bytes = atoi(bytes);
-        ipt->add_mem(ipt, &entry, sizeof(entry));
-    }
-    fclose(fp);
-
-    return true;
-}
-
 time_t time_parse_date(const char *s, bool end)
 {
     unsigned int month = 1, day = 1, hour = 0, minute = 0, second = 0;
@@ -325,6 +243,47 @@ int time_parse_minutes(const char *s)
     return -1;
 }
 
+int time_check(time_t start, time_t stop)
+{
+    if(start < stop)
+        return true;
+    else
+        return false;
+}
+
+void time_divide(unsigned int fulltime, unsigned int *hours,
+    unsigned int *minutes, unsigned int *seconds)
+{
+    *seconds  = fulltime % 60;
+    fulltime /= 60;
+    *minutes  = fulltime % 60;
+    *hours    = fulltime / 60;
+}
+
+void time_print_daytime(time_t time, char *daytime)
+{
+    unsigned int h, m, s;
+
+    time_divide(time, &h, &m, &s);
+    sprintf(daytime, "%02u:%02u:%02u", h, m, s);
+}
+
+void time_print_date(time_t date, char *utc)
+{
+    struct tm *t;
+
+    if (date == 0) {
+        strcpy(utc, "0000-00-00T00:00:00");
+        return;
+    }
+
+    t = gmtime(&date);
+    sprintf(utc, "%04u-%02u-%02uT%02u:%02u:%02u",
+           t->tm_year + 1900, t->tm_mon + 1, t->tm_mday,
+           t->tm_hour, t->tm_min, t->tm_sec);
+}
+
+
 long parse_traffic_data(const char *s)
 {
     char *e;
@@ -350,6 +309,35 @@ long parse_traffic_data(const char *s)
     }
 
     return (long)f;
+}
+
+void print_readable_traffic(unsigned long bytes, char *readable)
+{
+    unsigned int i = 0;
+    float n = (float)bytes;
+
+    while(n >= 1024) {
+        n = n / 1024;
+        i++;
+    };
+
+    switch (i) {
+    case 0:
+        sprintf(readable, "%luB", bytes);
+        break;
+    case 1:
+        sprintf(readable, "%.2fK", n);
+        break;
+    case 2:
+        sprintf(readable, "%.2fM", n);
+        break;
+    case 3:
+        sprintf(readable, "%.2fG", n);
+        break;
+    default:
+        sprintf(readable, "%luB", bytes);
+        break;
+    }
 }
 
 

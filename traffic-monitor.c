@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
+#include "util.h"
 #include "traffic-rules.h"
 #include "traffic-monitor.h"
 
@@ -39,7 +36,85 @@ void tm_del_entry(pool_t *monitor, struct monitor_entry *entry)
     }
 }
 
-void tm_upate_list(pool_t *monitor, pool_t *arp)
+void tm_update_arp_list(pool_t *arp)
+{
+    FILE *fp;
+    char line[128];
+    char ip[128];
+    char hwa[128];
+    char mask[128];
+    char dev[128];
+    int type, flags;
+    int num;
+    struct arp_info_entry entry;
+
+    arp->del_all(arp);
+    fp = fopen("/proc/net/arp", "r");
+    if(!fp) {
+        perror("Open arp file error");
+        return;
+    }
+
+    fgets(line, sizeof(line), fp);
+    while (fgets(line, sizeof(line), fp)) {
+        mask[0] = '-'; mask[1] = '\0';
+        dev[0] = '-'; dev[1] = '\0';
+
+        num = sscanf(line, "%s 0x%x 0x%x %s %s %s\n",
+                     ip, &type, &flags, hwa, mask, dev);
+        if (num < 4) {
+            break;
+        }
+
+        entry.ip.s_addr = inet_addr(ip);
+        memcpy(entry.mac, str2mac(hwa), ETH_ALEN);
+        snprintf(entry.dev, 32, "%s", dev);
+        arp->add_mem(arp, &entry, sizeof(entry));
+    }
+    fclose(fp);
+}
+
+int tm_update_ipt_list(pool_t *ipt, const char *chain)
+{
+    FILE *fp;
+    int num;
+    char cmd[128];
+    char line[128];
+    struct ipt_info_entry entry;
+    char pkts[32], bytes[32];
+    char buf1[32], buf2[32], buf3[32];
+
+    sprintf(cmd, "echo \"7890\" | sudo -S iptables -vxnL %s", chain);
+    fp = popen(cmd, "r");
+    if(!fp) {
+        return false;
+    }
+
+    fgets(line, sizeof(line), fp);
+    fgets(line, sizeof(line), fp);
+    while(fgets(line, sizeof(line), fp)) {
+        num = sscanf(line, "%s %s %*s %*s %*s %*s %s %s %s",
+                     pkts, bytes, buf1, buf2, buf3);
+        if(num < 4) {
+            break;
+        }
+        if(num == 4) {
+            entry.sIp.s_addr = inet_addr(buf1);
+            entry.dIp.s_addr = inet_addr(buf2);
+        } else {
+            entry.sIp.s_addr = inet_addr(buf2);
+            entry.dIp.s_addr = inet_addr(buf3);
+        }
+        entry.bytes = atoi(bytes);
+        ipt->add_mem(ipt, &entry, sizeof(entry));
+    }
+    fclose(fp);
+
+    return true;
+}
+
+
+void tm_update_monitor_list(pool_t *monitor, pool_t *arp)
 {
     int find = false;
     mem_t *mm, *ma, *tmp;
@@ -75,18 +150,40 @@ void tm_upate_list(pool_t *monitor, pool_t *arp)
 void tm_print_traffic(pool_t *monitor)
 {
     mem_t *m;
+    char buf[64];
     struct monitor_entry *m_entry;
 
     term_reset_cursor();
     term_hide_cursor();
     term_clear_screen();
-    printf("%-17s\t%-15s\t%-16s\t%-16s\n", "mac", "ip", "upload bytes", "download bytes");
+    printf("%-2s %-17s %-15s %-6s %-6s %-8s %-8s %-8s %-19s %-19s %-9s %-9s\n",
+           "on", "mac", "ip", "uBytes", "dBytes", "uplink", "downlink", "maxBytes", "DateStart",
+           "DateStop", "TimeStart", "TimeStop");
     list_for_each_entry(m, &monitor->used_list, list) {
         m_entry = m->mem;
-        printf("%-17s\t", mac2str(m_entry->mac));
-        printf("%-15s\t", inet_ntoa(m_entry->ip));
-        printf("%-16llu\t", m_entry->upload_bytes);
-        printf("%-16llu\n", m_entry->download_bytes);
+        printf("%-2d ", m_entry->enabledCtrl);
+        printf("%-17s ", mac2str(m_entry->mac));
+        printf("%-15s ", inet_ntoa(m_entry->ip));
+        print_readable_traffic(m_entry->upload_bytes, buf);
+        printf("%-6s ", buf);
+        print_readable_traffic(m_entry->download_bytes, buf);
+        printf("%-6s ", buf);
+        print_readable_traffic(m_entry->uplink, buf);
+        strcat(buf, "/s");
+        printf("%-8s ", buf);
+        print_readable_traffic(m_entry->downlink, buf);
+        strcat(buf, "/s");
+        printf("%-8s ", buf);
+        print_readable_traffic(m_entry->max_bytes, buf);
+        printf("%-8s ", buf);
+        time_print_date(m_entry->date_start, buf);
+        printf("%-19s ", buf);
+        time_print_date(m_entry->date_stop, buf);
+        printf("%-19s ", buf);
+        time_print_daytime(m_entry->daytime_start, buf);
+        printf("%-9s ", buf);
+        time_print_daytime(m_entry->daytime_stop, buf);
+        printf("%-9s\n", buf);
     }
 }
 

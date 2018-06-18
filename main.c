@@ -6,7 +6,10 @@
 #include <unistd.h>
 #include "usock.h"
 #include "utask.h"
+#include "util.h"
 #include "service.h"
+#include "output.h"
+#include "traffic-monitor.h"
 
 pool_t arp, monitor;
 struct traffic_setting global;
@@ -36,9 +39,10 @@ void traffic_refresh_timeout(utimer_t *t)
 {
     tm_update_traffic(&monitor);
     tm_print_traffic(&monitor);
-    parse_arp_cache_list(&arp);
-    tm_upate_list(&monitor, &arp);
+    tm_update_arp_list(&arp);
+    tm_update_monitor_list(&monitor, &arp);
     tm_update_iptables(&monitor);
+    tm_output_traffic_info(&monitor, global.output_file);
 
     utimer_set(t, global.refresh_time);
     utimer_add(t);
@@ -84,6 +88,7 @@ int main(int argc, char **argv)
             }
             break;
         case 'o':
+            strncpy(global.output_file, optarg, 128);
             break;
         case 'S':
             isServer = true;
@@ -166,6 +171,8 @@ int main(int argc, char **argv)
 
     init_pool(&arp, 10, sizeof(struct arp_info_entry));
     init_pool(&monitor, 10, sizeof(struct monitor_entry));
+
+    tm_load_traffic_info(&monitor, global.output_file);
 
     if(global.refresh_time == 0)
         global.refresh_time = 3000;

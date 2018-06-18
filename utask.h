@@ -1,5 +1,5 @@
-#ifndef TIMER_H
-#define TIMER_H
+#ifndef UTASK_H
+#define UTASK_H
 
 
 #include "list.h"
@@ -45,4 +45,4 @@ void utasks_loop(void);
 void utasks_done(void);
 
 
-#endif // TIMER_H
+#endif // UTASK_H

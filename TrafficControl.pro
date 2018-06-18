@@ -36,4 +36,5 @@ HEADERS += \
     usock.h \
     output.h \
     util.h \
-    service.h
+    service.h \
+    traffic-types.h
