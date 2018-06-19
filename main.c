@@ -164,10 +164,10 @@ int main(int argc, char **argv)
         exit(EXIT_SUCCESS);
     }
 
-//    if(getuid() != 0) {
-//        printf("Please run as root\n");
-//        exit(EXIT_FAILURE);
-//    }
+    if(getuid() != 0) {
+        printf("Please run as root\n");
+        exit(EXIT_FAILURE);
+    }
 
     if(!foreground)
         daemon(0, 0);
