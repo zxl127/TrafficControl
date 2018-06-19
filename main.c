@@ -11,6 +11,8 @@
 #include "output.h"
 #include "traffic-monitor.h"
 
+#define VERSION     "v1.0.0"
+
 pool_t arp, monitor;
 struct traffic_setting global;
 
@@ -23,16 +25,34 @@ struct option long_opts[] = {
     {"date-stop", required_argument, NULL, '5'},
     {"daytime-start", required_argument, NULL, '6'},
     {"daytime-stop", required_argument, NULL, '7'},
+    {"version", no_argument, NULL, 'v'},
     {NULL}
 };
 
 static void print_help(char *name)
 {
-    printf("Usage: %s [OPTIONS]\n", name);
-    printf(" -f, --foreground        Run in the foreground\n");
-    printf(" -i, --interval          Refresh traffic information interval\n");
-    printf(" -h, --help              Display this help text\n");
-    printf(" -v, --version           Display the %s version\n", name);
+    printf("Usage in server mode: %s -S [-f -t interval -o file]\n", name);
+    printf("Usage in client mode: %s [-A -D -F] [Options]\n", name);
+    printf("\n");
+    printf(" Server Mode\n");
+    printf(" -S                     Run in server mode\n");
+    printf("\n");
+    printf(" Client Operations\n");
+    printf(" -A                     Add comma separated mac to traffic control table\n");
+    printf(" -D                     Delete comma separated mac in traffic control table\n");
+    printf(" -F                     Flush traffic control table\n");
+    printf("\n");
+    printf(" Options\n");
+    printf(" -f, --foreground       Run in the foreground\n");
+    printf(" -h, --help             Display this help text\n");
+    printf(" -t                     Traffic information refresh interval(>=1000ms)\n");
+    printf(" -o                     Output traffic information to file\n");
+    printf(" --max-bytes            Set the maximum bytes(B/K/M/G)\n");
+    printf(" --date-start           Set the start date time in UTC(YYYY-MM-DDTHH:MM:SS)\n");
+    printf(" --date-stop            Set the stop date time in UTC(YYYY-MM-DDTHH:MM:SS)\n");
+    printf(" --daytime-start        Set the start day time in HH:MM:SS or HH:MM\n");
+    printf(" --daytime-stop         Set the stop day time in HH:MM:SS or HH:MM\n");
+    printf(" -v, --version          Display the %s version\n", name);
 }
 
 void traffic_refresh_timeout(utimer_t *t)
@@ -66,7 +86,7 @@ int main(int argc, char **argv)
     memset(&global, 0, sizeof(global));
 
     while(1) {
-        c = getopt_long(argc, argv, "A:D:fFht:o:S", long_opts, NULL);
+        c = getopt_long(argc, argv, "A:D:fFht:o:Sv", long_opts, NULL);
         if(c == EOF)
             break;
         switch (c) {
@@ -85,7 +105,7 @@ int main(int argc, char **argv)
             global.method = CMD_METHOD_F;
             break;
         case 'h':
-            print_help(argv[0]);
+            print_help(strrchr(argv[0], '/') + 1);
             exit(EXIT_SUCCESS);
             break;
         case 't':
@@ -100,6 +120,10 @@ int main(int argc, char **argv)
             break;
         case 'S':
             isServer = true;
+            break;
+        case 'v':
+            printf("%s %s\n", strrchr(argv[0], '/') + 1, VERSION);
+            exit(EXIT_SUCCESS);
             break;
         case '1':
             foreground = true;
