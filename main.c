@@ -149,7 +149,7 @@ int main(int argc, char **argv)
             break;
         case '3':
         {
-            long b;
+            long long b;
             b = parse_traffic_data(optarg);
             if(b < 0)
                 exit(EXIT_FAILURE);

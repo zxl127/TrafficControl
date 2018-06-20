@@ -26,7 +26,7 @@ int time_check(time_t start, time_t stop);
 void time_divide(unsigned int fulltime, unsigned int *hours, unsigned int *minutes, unsigned int *seconds);
 void time_print_daytime(time_t time, char *daytime);
 void time_print_date(time_t date, char *utc);
-long parse_traffic_data(const char *s);
+long long parse_traffic_data(const char *s);
 void print_readable_traffic(unsigned long bytes, char *readable);
 
 #endif

@@ -284,12 +284,12 @@ void time_print_date(time_t date, char *utc)
 }
 
 
-long parse_traffic_data(const char *s)
+long long parse_traffic_data(const char *s)
 {
     char *e;
-    float f;
+    double f;
 
-    f = strtof(s, &e);
+    f = strtod(s, &e);
     switch (*e) {
     case 'G':
         f = f * 1024 * 1024 * 1024;
@@ -308,7 +308,7 @@ long parse_traffic_data(const char *s)
         return -1;
     }
 
-    return (long)f;
+    return (long long)f;
 }
 
 void print_readable_traffic(unsigned long bytes, char *readable)
