@@ -235,10 +235,7 @@ void tm_update_traffic(pool_t *monitor)
                 break;
             }
         }
-    }
 
-    list_for_each_entry(m, &monitor->used_list, list) {
-        m_entry = m->mem;
         for(rule = iptc_first_rule(TRAFFIC_OUT_CHAIN, handle); rule; rule = iptc_next_rule(rule, handle)) {
             if(m_entry->ip.s_addr == rule->ip.src.s_addr && rule->ip.dst.s_addr == INADDR_ANY) {
                 m_entry->uplink = (__u32)((rule->counters.bcnt - m_entry->upload_bytes) * 1.0 / (global.refresh_time * 1.0 / 1000));
