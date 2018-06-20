@@ -5,7 +5,7 @@
 #include "service.h"
 #include "traffic-monitor.h"
 
-#define TRAFFIC_CONTROL_SOCKET      "/home/philips/traffic.socket"
+#define TRAFFIC_CONTROL_SOCKET      "/tmp/traffic.socket"
 
 extern pool_t monitor;
 extern struct traffic_setting global;
@@ -322,7 +322,6 @@ int init_server(void)
 {
     static ufd_t sfd;
 
-    unlink(TRAFFIC_CONTROL_SOCKET);
     if(access(TRAFFIC_CONTROL_SOCKET, F_OK) == 0) {
         printf("Server is running\n");
         return false;
