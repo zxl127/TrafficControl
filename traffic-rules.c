@@ -69,6 +69,8 @@ void tm_set_entry(struct sockaddr_in src, struct sockaddr_in dst, const char *la
     target->u.target_size = target_size;
     if(label)
         strcpy(target->u.user.name, label);
+    else
+        strcpy(target->u.user.name, "");
 }
 
 void tm_set_jump_entry(const xt_chainlabel chain, struct ipt_entry *rule)
