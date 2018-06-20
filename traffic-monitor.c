@@ -165,7 +165,7 @@ void tm_print_traffic(pool_t *monitor)
     term_reset_cursor();
     term_hide_cursor();
     term_clear_screen();
-    printf("%-2s %-17s %-15s %-6s %-6s %-8s %-8s %-8s %-19s %-19s %-9s %-9s\n",
+    printf("%-2s %-17s %-15s %-8s %-8s %-10s %-10s %-8s %-19s %-19s %-9s %-9s\n",
            "on", "mac", "ip", "uBytes", "dBytes", "uplink", "downlink", "maxBytes", "DateStart",
            "DateStop", "TimeStart", "TimeStop");
     list_for_each_entry(m, &monitor->used_list, list) {
@@ -174,15 +174,15 @@ void tm_print_traffic(pool_t *monitor)
         printf("%-17s ", mac2str(m_entry->mac));
         printf("%-15s ", inet_ntoa(m_entry->ip));
         print_readable_traffic(m_entry->upload_bytes, buf);
-        printf("%-6s ", buf);
+        printf("%-8s ", buf);
         print_readable_traffic(m_entry->download_bytes, buf);
-        printf("%-6s ", buf);
+        printf("%-8s ", buf);
         print_readable_traffic(m_entry->uplink, buf);
         strcat(buf, "/s");
-        printf("%-8s ", buf);
+        printf("%-10s ", buf);
         print_readable_traffic(m_entry->downlink, buf);
         strcat(buf, "/s");
-        printf("%-8s ", buf);
+        printf("%-10s ", buf);
         print_readable_traffic(m_entry->max_bytes, buf);
         printf("%-8s ", buf);
         time_print_date(m_entry->date_start, buf);
