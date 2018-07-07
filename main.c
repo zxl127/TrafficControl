@@ -211,6 +211,8 @@ int main(int argc, char **argv)
 
     if(!foreground)
         daemon(0, 0);
+    else
+        term_hide_cursor();
 
     utasks_init();
 

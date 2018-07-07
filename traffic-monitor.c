@@ -163,7 +163,6 @@ void tm_print_traffic(pool_t *monitor)
     struct monitor_entry *m_entry;
 
     term_reset_cursor();
-    term_hide_cursor();
     term_clear_screen();
     printf("%-2s %-17s %-15s %-8s %-8s %-10s %-10s %-8s %-19s %-19s %-9s %-9s\n",
            "on", "mac", "ip", "uBytes", "dBytes", "uplink", "downlink", "maxBytes", "DateStart",
