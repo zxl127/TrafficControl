@@ -5,13 +5,14 @@
 #include "service.h"
 #include "traffic-monitor.h"
 
+//#define COMMUNICATE_IN_JSON
 #define TRAFFIC_CONTROL_SOCKET      "/tmp/traffic.socket"
 
 extern pool_t monitor;
 extern struct traffic_setting global;
 
-
-int response_client_request(FILE *f, int success, const char *msg)
+#ifdef COMMUNICATE_IN_JSON
+int send_server_response(FILE *f, int success, const char *msg)
 {
     json_t *doc;
     json_t *value;
@@ -228,6 +229,58 @@ end:
     json_free_value(&doc);
     return false;
 }
+#else
+int send_server_response(FILE *f, int success, const char *msg)
+{
+    int ret;
+
+    ret = fwrite(&success, sizeof(int), 1, f);
+    if(ret < 1)
+        return false;
+    ret = fwrite(msg, strlen(msg) + 1, 1, f);
+    if(ret < 1)
+        return false;
+    return true;
+}
+
+int parse_server_response(FILE *f)
+{
+    int ret;
+    int success;
+    char msg[1024];
+
+    ret = fread(&success, sizeof(int), 1, f);
+    if(ret < 1)
+        return false;
+    bzero(msg, sizeof(msg));
+    ret = fread(msg, sizeof(msg), 1, f);
+    if(ret < 0)
+        return false;
+    if(strlen(msg) != 0)
+        printf("%s\n", msg);
+    return true;
+}
+
+int send_client_request(FILE *f, struct traffic_setting *setting)
+{
+    int ret;
+
+    ret = fwrite(setting, sizeof(struct traffic_setting), 1, f);
+    if(ret < 1)
+        return false;
+    return true;
+}
+
+int parse_client_request(FILE *f, struct traffic_setting *setting)
+{
+    int ret;
+
+    ret = fread(setting, sizeof(struct traffic_setting), 1, f);
+    if(ret < 1)
+        return false;
+    return true;
+}
+#endif
 
 void apply_client_settings(struct traffic_setting *setting, pool_t *monitor)
 {
@@ -279,10 +332,10 @@ void process_client_request(ufd_t *f)
 
     memset(&setting, 0, sizeof(setting));
     if(parse_client_request(fp, &setting) == false) {
-        response_client_request(fp, false, "Parse settings error");
+        send_server_response(fp, false, "Parse settings error");
     } else {
         apply_client_settings(&setting, &monitor);
-        response_client_request(fp, true, "Apply settings success");
+        send_server_response(fp, true, "Apply settings success");
     }
 end:
     ufd_delete(f);
