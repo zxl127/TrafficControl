@@ -33,8 +33,8 @@ struct traffic_setting global;
 
 
 struct option long_opts[] = {
-    {"foregroud", no_argument, NULL, '1'},
-    {"help", no_argument, NULL, '2'},
+    {"foregroud", no_argument, NULL, 'f'},
+    {"help", no_argument, NULL, 'h'},
     {"max-bytes", required_argument, NULL, '3'},
     {"date-start", required_argument, NULL, '4'},
     {"date-stop", required_argument, NULL, '5'},
