@@ -120,9 +120,13 @@ int main(int argc, char **argv)
             global.method = CMD_METHOD_F;
             break;
         case 'h':
-            print_help(strrchr(argv[0], '/') + 1);
+        {
+            char *name = strrchr(argv[0], '/');
+            name = name? (name + 1) : argv[0];
+            print_help(name);
             exit(EXIT_SUCCESS);
             break;
+        }
         case 't':
             global.refresh_time = atoi(optarg);
             if(global.refresh_time < 1000) {
@@ -137,16 +141,13 @@ int main(int argc, char **argv)
             isServer = true;
             break;
         case 'v':
-            printf("%s %s\n", strrchr(argv[0], '/') + 1, VERSION);
+        {
+            char *name = strrchr(argv[0], '/');
+            name = name? (name + 1) : argv[0];
+            printf("%s %s\n", name, VERSION);
             exit(EXIT_SUCCESS);
             break;
-        case '1':
-            foreground = true;
-            break;
-        case '2':
-            print_help(argv[0]);
-            exit(EXIT_SUCCESS);
-            break;
+        }
         case '3':
         {
             long long b;
