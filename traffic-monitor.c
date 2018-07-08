@@ -252,7 +252,7 @@ void tm_update_iptables(pool_t *monitor)
 {
     char *label;
     struct iptc_handle *handle;
-    struct ipt_entry *rule;
+    static struct ipt_entry *rule = NULL;
 //    struct xt_counters xtc;
     mem_t *m;
     struct monitor_entry *me;
@@ -266,9 +266,11 @@ void tm_update_iptables(pool_t *monitor)
     if(tm_init_all_chain(handle) == false)
         goto end;
 
-    rule = calloc(1, XT_ALIGN(sizeof(struct ipt_entry)) + XT_ALIGN(sizeof(struct ipt_entry_target) + sizeof(int)));
-    if(!rule)
-        goto end;
+    if(!rule) {
+        rule = calloc(1, XT_ALIGN(sizeof(struct ipt_entry)) + XT_ALIGN(sizeof(struct ipt_entry_target) + sizeof(int)));
+        if(!rule)
+            goto end;
+    }
 
     sin1.sin_port = -1;
     sin2.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -295,7 +297,6 @@ void tm_update_iptables(pool_t *monitor)
 //        printf("download: %d, %d\n", xtc.bcnt, xtc.pcnt);
     }
     iptc_commit(handle);
-    free(rule);
 
 end:
     iptc_free(handle);
