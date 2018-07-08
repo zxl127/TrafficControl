@@ -119,8 +119,11 @@ int tm_init_all_chain(struct iptc_handle *handle)
         if(!iptc_insert_entry("INPUT", rule, 0, handle))
             goto end;
     }
-    iptc_flush_entries(TRAFFIC_IN_CHAIN, handle);
-    iptc_flush_entries(TRAFFIC_OUT_CHAIN, handle);
+
+    if(!iptc_flush_entries(TRAFFIC_IN_CHAIN, handle))
+        goto end;
+    if(!iptc_flush_entries(TRAFFIC_OUT_CHAIN, handle))
+        goto end;
 
     free(rule);
     return true;
