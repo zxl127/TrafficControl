@@ -226,6 +226,11 @@ void tm_update_traffic(pool_t *monitor)
 #else
     list_for_each_entry(m, &monitor->used_list, list) {
         m_entry = m->mem;
+        if(m_entry->ip.s_addr == INADDR_ANY) {
+            m_entry->downlink = 0;
+            m_entry->uplink = 0;
+            continue;
+        }
         for(rule = iptc_first_rule(TRAFFIC_IN_CHAIN, handle); rule; rule = iptc_next_rule(rule, handle)) {
             if(m_entry->ip.s_addr == rule->ip.dst.s_addr && rule->ip.src.s_addr == INADDR_ANY) {
                 m_entry->downlink = (__u32)((rule->counters.bcnt - m_entry->download_bytes) * 1.0 / (global.refresh_time * 1.0 / 1000));
@@ -277,6 +282,8 @@ void tm_update_iptables(pool_t *monitor)
     sin2.sin_port = -1;
     list_for_each_entry(m, &monitor->used_list, list) {
         me = m->mem;
+        if(me->ip.s_addr == INADDR_ANY)
+            continue;
         sin1.sin_addr = me->ip;
         if(me->enabledCtrl && me->download_bytes + me->upload_bytes >= me->max_bytes) {
             label = IPTC_LABEL_DROP;
