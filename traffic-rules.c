@@ -40,13 +40,20 @@ int tm_del_ipt_entry(const xt_chainlabel chain, const struct ipt_entry *e, struc
     return true;
 }
 
-void tm_set_entry(struct sockaddr_in src, struct sockaddr_in dst, const char *label, struct ipt_entry *rule)
+struct ipt_entry *tm_get_entry(struct sockaddr_in src, struct sockaddr_in dst, const char *label)
 {
     __u16 entry_size, target_size;
-    struct ipt_entry_target *target = NULL;
+    struct ipt_entry_target *target;
+    static struct ipt_entry *rule = NULL;
 
     entry_size = XT_ALIGN(sizeof(struct ipt_entry));
     target_size = XT_ALIGN(sizeof(struct ipt_entry_target) + sizeof(int));
+
+    if(!rule) {
+        rule = calloc(1, entry_size + target_size);
+        if(!rule)
+            return NULL;
+    }
 
     rule->target_offset = entry_size;
     rule->next_offset = entry_size + target_size;
@@ -71,15 +78,24 @@ void tm_set_entry(struct sockaddr_in src, struct sockaddr_in dst, const char *la
         strcpy(target->u.user.name, label);
     else
         strcpy(target->u.user.name, "");
+
+    return rule;
 }
 
-void tm_set_jump_entry(const xt_chainlabel chain, struct ipt_entry *rule)
+struct ipt_entry *tm_get_jump_entry(const xt_chainlabel chain)
 {
     __u16 entry_size, target_size;
     struct ipt_entry_target *target;
+    static struct ipt_entry *rule = NULL;
 
     entry_size = XT_ALIGN(sizeof(struct ipt_entry));
     target_size = XT_ALIGN(sizeof(struct ipt_entry_target) + sizeof(int));
+
+    if(!rule) {
+        rule = calloc(1, entry_size + target_size);
+        if(!rule)
+            return NULL;
+    }
 
     rule->target_offset = entry_size;
     rule->next_offset = entry_size + target_size;
@@ -88,15 +104,13 @@ void tm_set_jump_entry(const xt_chainlabel chain, struct ipt_entry *rule)
     target = (struct ipt_entry_target *)(rule->elems);
     target->u.target_size = target_size;
     strcpy(target->u.user.name, chain);
+
+    return rule;
 }
 
 int tm_init_all_chain(struct iptc_handle *handle)
 {
     struct ipt_entry *rule;
-
-    rule = calloc(1, XT_ALIGN(sizeof(struct ipt_entry)) + XT_ALIGN(sizeof(struct ipt_entry_target) + sizeof(int)));
-    if(!rule)
-        return false;
 
     if(!iptc_is_chain(TRAFFIC_IN_CHAIN, handle)) {
         if(!iptc_create_chain(TRAFFIC_IN_CHAIN, handle))
@@ -108,13 +122,13 @@ int tm_init_all_chain(struct iptc_handle *handle)
             goto end;
     }
 
-    tm_set_jump_entry(TRAFFIC_IN_CHAIN, rule);
+    rule = tm_get_jump_entry(TRAFFIC_IN_CHAIN);
     if(!iptc_check_entry("OUTPUT", rule, (unsigned char *)"", handle)) {
         if(!iptc_insert_entry("OUTPUT", rule, 0, handle))
             goto end;
     }
 
-    tm_set_jump_entry(TRAFFIC_OUT_CHAIN, rule);
+    rule = tm_get_jump_entry(TRAFFIC_OUT_CHAIN);
     if(!iptc_check_entry("INPUT", rule, (unsigned char *)"", handle)) {
         if(!iptc_insert_entry("INPUT", rule, 0, handle))
             goto end;
@@ -125,11 +139,9 @@ int tm_init_all_chain(struct iptc_handle *handle)
     if(!iptc_flush_entries(TRAFFIC_OUT_CHAIN, handle))
         goto end;
 
-    free(rule);
     return true;
 
 end:
-    free(rule);
     printf("%s\n", iptc_strerror(errno));
     return false;
 }

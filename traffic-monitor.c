@@ -257,7 +257,7 @@ void tm_update_iptables(pool_t *monitor)
 {
     char *label;
     struct iptc_handle *handle;
-    static struct ipt_entry *rule = NULL;
+    struct ipt_entry *rule;
 //    struct xt_counters xtc;
     mem_t *m;
     struct monitor_entry *me;
@@ -270,12 +270,6 @@ void tm_update_iptables(pool_t *monitor)
     }
     if(tm_init_all_chain(handle) == false)
         goto end;
-
-    if(!rule) {
-        rule = calloc(1, XT_ALIGN(sizeof(struct ipt_entry)) + XT_ALIGN(sizeof(struct ipt_entry_target) + sizeof(int)));
-        if(!rule)
-            goto end;
-    }
 
     sin1.sin_port = -1;
     sin2.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -291,13 +285,13 @@ void tm_update_iptables(pool_t *monitor)
             label = NULL;
         }
 
-        tm_set_entry(sin1, sin2, label, rule);
+        rule = tm_get_entry(sin1, sin2, label);
         rule->counters.bcnt = me->upload_bytes;
         rule->counters.pcnt = me->upload_packets;
         iptc_append_entry(TRAFFIC_OUT_CHAIN, rule, handle);
 //        printf("upload: %d, %d\n", xtc.bcnt, xtc.pcnt);
 
-        tm_set_entry(sin2, sin1, label, rule);
+        rule = tm_get_entry(sin2, sin1, label);
         rule->counters.bcnt = me->download_bytes;
         rule->counters.pcnt = me->download_packets;
         iptc_append_entry(TRAFFIC_IN_CHAIN, rule, handle);
