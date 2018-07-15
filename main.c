@@ -93,10 +93,14 @@ void update_iptables_timeout(utimer_t *t)
 int main(int argc, char **argv)
 {
     int c;
+    char *NAME;
     bool foreground = false;
     bool isServer = false;
     utimer_t refresh_timer = {.handler = traffic_refresh_timeout};
     utimer_t iptables_timer = {.handler = update_iptables_timeout};
+
+    NAME = strrchr(argv[0], '/');
+    NAME = NAME? (NAME + 1) : argv[0];
 
     memset(&global, 0, sizeof(global));
 
@@ -120,13 +124,9 @@ int main(int argc, char **argv)
             global.method = CMD_METHOD_F;
             break;
         case 'h':
-        {
-            char *name = strrchr(argv[0], '/');
-            name = name? (name + 1) : argv[0];
-            print_help(name);
+            print_help(NAME);
             exit(EXIT_SUCCESS);
             break;
-        }
         case 't':
             global.refresh_time = atoi(optarg);
             if(global.refresh_time < 1000) {
@@ -141,13 +141,9 @@ int main(int argc, char **argv)
             isServer = true;
             break;
         case 'v':
-        {
-            char *name = strrchr(argv[0], '/');
-            name = name? (name + 1) : argv[0];
-            printf("%s %s\n", name, VERSION);
+            printf("%s %s\n", NAME, VERSION);
             exit(EXIT_SUCCESS);
             break;
-        }
         case '3':
         {
             long long b;
@@ -194,7 +190,7 @@ int main(int argc, char **argv)
             break;
         }
         default:
-            print_help(argv[0]);
+            print_help(NAME);
             exit(EXIT_FAILURE);
         }
     }
