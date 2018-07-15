@@ -255,13 +255,14 @@ void tm_update_traffic(pool_t *monitor)
 
 void tm_update_iptables(pool_t *monitor)
 {
-    char *label;
+    mem_t *m;
+    bool flow_limited;
+    bool time_limited;
     struct iptc_handle *handle;
     struct ipt_entry *rule;
-//    struct xt_counters xtc;
-    mem_t *m;
     struct monitor_entry *me;
     struct sockaddr_in sin1, sin2;
+    struct xt_time_info time;
 
     handle = iptc_init("filter");
     if(!handle) {
@@ -279,23 +280,55 @@ void tm_update_iptables(pool_t *monitor)
         if(me->ip.s_addr == INADDR_ANY)
             continue;
         sin1.sin_addr = me->ip;
-        if(me->enabledCtrl && me->download_bytes + me->upload_bytes >= me->max_bytes) {
-            label = IPTC_LABEL_DROP;
-        } else {
-            label = NULL;
+        flow_limited = false;
+        time_limited = false;
+        if(me->enabledCtrl) {
+            if(me->max_bytes > 0 && me->download_bytes + me->upload_bytes >= me->max_bytes)
+                flow_limited = true;
+            if(me->date_start < me->date_stop) {
+                time_limited = true;
+                time.date_start = me->date_start;
+                time.date_stop = me->date_stop;
+            } else {
+                time.date_start = 0;
+                time.date_stop = INT_MAX;
+            }
+            if(me->daytime_start != me->daytime_stop) {
+                time_limited = true;
+                time.daytime_start = me->daytime_start;
+                time.daytime_stop = me->daytime_stop;
+            } else {
+                time.daytime_start = XT_TIME_MIN_DAYTIME;
+                time.daytime_stop = XT_TIME_MAX_DAYTIME;
+            }
+            if(time_limited) {
+                time.flags |= XT_TIME_LOCAL_TZ;
+                if(me->daytime_start > me->daytime_stop)
+                    time.flags |= XT_TIME_CONTIGUOUS;
+                time.monthdays_match = XT_TIME_ALL_MONTHDAYS;
+                time.weekdays_match = XT_TIME_ALL_WEEKDAYS;
+            }
         }
 
-        rule = tm_get_entry(sin1, sin2, label);
+        if(flow_limited)
+            rule = tm_get_entry(sin1, sin2, IPTC_LABEL_DROP);
+        else if(time_limited)
+            rule = tm_get_time_limit_entry(sin1, sin2, time, IPTC_LABEL_DROP);
+        else
+            rule = tm_get_entry(sin1, sin2, NULL);
         rule->counters.bcnt = me->upload_bytes;
         rule->counters.pcnt = me->upload_packets;
         iptc_append_entry(TRAFFIC_OUT_CHAIN, rule, handle);
-//        printf("upload: %d, %d\n", xtc.bcnt, xtc.pcnt);
 
-        rule = tm_get_entry(sin2, sin1, label);
+        if(flow_limited)
+            rule = tm_get_entry(sin2, sin1, IPTC_LABEL_DROP);
+        else if(time_limited)
+            rule = tm_get_time_limit_entry(sin2, sin1, time, IPTC_LABEL_DROP);
+        else
+            rule = tm_get_entry(sin2, sin1, NULL);
         rule->counters.bcnt = me->download_bytes;
         rule->counters.pcnt = me->download_packets;
         iptc_append_entry(TRAFFIC_IN_CHAIN, rule, handle);
-//        printf("download: %d, %d\n", xtc.bcnt, xtc.pcnt);
     }
     iptc_commit(handle);
 
