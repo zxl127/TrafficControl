@@ -63,10 +63,10 @@ static void print_help(char *name)
     printf(" -t                     Traffic information refresh interval(>=1000ms)\n");
     printf(" -o                     Output traffic information to file\n");
     printf(" --max-bytes            Set the maximum bytes(B/K/M/G)\n");
-    printf(" --date-start           Set the start date time in UTC(YYYY-MM-DDTHH:MM:SS)\n");
-    printf(" --date-stop            Set the stop date time in UTC(YYYY-MM-DDTHH:MM:SS)\n");
-    printf(" --daytime-start        Set the start day time in HH:MM:SS or HH:MM\n");
-    printf(" --daytime-stop         Set the stop day time in HH:MM:SS or HH:MM\n");
+    printf(" --date-start           Set the start date time in YYYY[-MM[-DD[Thh[:mm[:ss]]]]]\n");
+    printf(" --date-stop            Set the stop date time in YYYY[-MM[-DD[Thh[:mm[:ss]]]]]\n");
+    printf(" --daytime-start        Set the start day time in hh:mm[:ss]\n");
+    printf(" --daytime-stop         Set the stop day time in hh:mm[:ss]\n");
     printf(" -v, --version          Display the %s version\n", name);
 }
 
