@@ -199,8 +199,8 @@ time_t time_parse_date(const char *s, bool end)
     tm.tm_sec  = second;
     tm.tm_isdst = 0;
 
-//	setenv("TZ", "UTC", true);
-//	tzset();
+    setenv("TZ", "UTC", true);
+    tzset();
     ret = mktime(&tm);
     if (ret >= 0)
         return ret;
