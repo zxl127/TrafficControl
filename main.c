@@ -83,8 +83,8 @@ void traffic_refresh_timeout(utimer_t *t)
 void update_iptables_timeout(utimer_t *t)
 {
     tm_update_arp_list(&arp);
-    if(tm_update_monitor_list(&monitor, &arp) == true)
-        tm_update_iptables(&monitor);
+    tm_update_monitor_list(&monitor, &arp);
+    tm_update_iptables(&monitor);
 
     utimer_set(t, 5000);
     utimer_add(t);
