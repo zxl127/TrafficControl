@@ -82,6 +82,57 @@ struct ipt_entry *tm_get_entry(struct sockaddr_in src, struct sockaddr_in dst, c
     return rule;
 }
 
+struct ipt_entry *tm_get_time_limit_entry(struct sockaddr_in src, struct sockaddr_in dst, struct xt_time_info time, const char *label)
+{
+    __u16 entry_size, match_size, target_size;
+    struct ipt_entry_target *target;
+    struct ipt_entry_match *match;
+    struct xt_time_info *t;
+    static struct ipt_entry *rule = NULL;
+
+    entry_size = XT_ALIGN(sizeof(struct ipt_entry));
+    match_size = XT_ALIGN(sizeof(struct ipt_entry_match) + sizeof(struct xt_time_info));
+    target_size = XT_ALIGN(sizeof(struct ipt_entry_target) + sizeof(int));
+
+    if(!rule) {
+        rule = calloc(1, entry_size + match_size + target_size);
+        if(!rule)
+            return NULL;
+    }
+
+    rule->target_offset = entry_size + match_size;
+    rule->next_offset = entry_size + match_size + target_size;
+    rule->ip.proto = 0;
+    rule->nfcache = NFC_UNKNOWN;
+
+    if((rule->ip.src.s_addr = src.sin_addr.s_addr) == INADDR_ANY) {
+        rule->ip.smsk.s_addr = 0;
+    } else {
+        rule->ip.smsk.s_addr = inet_addr("255.255.255.255");
+    }
+
+    if((rule->ip.dst.s_addr = dst.sin_addr.s_addr) == INADDR_ANY) {
+        rule->ip.dmsk.s_addr = 0;
+    } else {
+        rule->ip.dmsk.s_addr = inet_addr("255.255.255.255");
+    }
+
+    match = (struct ipt_entry_match *)rule->elems;
+    match->u.match_size = match_size;
+    strcpy(match->u.user.name, "time");
+    t = (struct xt_time_info *)match->data;
+    memcpy(t, &time, sizeof(time));
+
+    target = (struct ipt_entry_target *)(rule->elems + match_size);
+    target->u.target_size = target_size;
+    if(label)
+        strcpy(target->u.user.name, label);
+    else
+        strcpy(target->u.user.name, "");
+
+    return rule;
+}
+
 struct ipt_entry *tm_get_jump_entry(const xt_chainlabel chain)
 {
     __u16 entry_size, target_size;
