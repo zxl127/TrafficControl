@@ -35,11 +35,11 @@ struct traffic_setting global;
 struct option long_opts[] = {
     {"foregroud", no_argument, NULL, 'f'},
     {"help", no_argument, NULL, 'h'},
-    {"max-bytes", required_argument, NULL, '3'},
-    {"date-start", required_argument, NULL, '4'},
-    {"date-stop", required_argument, NULL, '5'},
-    {"daytime-start", required_argument, NULL, '6'},
-    {"daytime-stop", required_argument, NULL, '7'},
+    {"maxbytes", required_argument, NULL, '3'},
+    {"datestart", required_argument, NULL, '4'},
+    {"datestop", required_argument, NULL, '5'},
+    {"timestart", required_argument, NULL, '6'},
+    {"timestop", required_argument, NULL, '7'},
     {"version", no_argument, NULL, 'v'},
     {NULL}
 };
@@ -62,11 +62,11 @@ static void print_help(char *name)
     printf(" -h, --help             Display this help text\n");
     printf(" -t                     Traffic information refresh interval(>=1000ms)\n");
     printf(" -o                     Output traffic information to file\n");
-    printf(" --max-bytes            Set the maximum bytes(B/K/M/G)\n");
-    printf(" --date-start           Set the start date time in YYYY[-MM[-DD[Thh[:mm[:ss]]]]]\n");
-    printf(" --date-stop            Set the stop date time in YYYY[-MM[-DD[Thh[:mm[:ss]]]]]\n");
-    printf(" --daytime-start        Set the start day time in hh:mm[:ss]\n");
-    printf(" --daytime-stop         Set the stop day time in hh:mm[:ss]\n");
+    printf(" --maxbytes             Set the maximum bytes(B/K/M/G)\n");
+    printf(" --datestart            Set the start date time in YYYY[-MM[-DD[Thh[:mm[:ss]]]]]\n");
+    printf(" --datestop             Set the stop date time in YYYY[-MM[-DD[Thh[:mm[:ss]]]]]\n");
+    printf(" --timestart            Set the start day time in hh:mm[:ss]\n");
+    printf(" --timestop             Set the stop day time in hh:mm[:ss]\n");
     printf(" -v, --version          Display the %s version\n", name);
 }
 
