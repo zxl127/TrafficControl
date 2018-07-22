@@ -302,6 +302,7 @@ void tm_update_iptables(pool_t *monitor)
                 time.daytime_stop = XT_TIME_MAX_DAYTIME;
             }
             if(time_limited) {
+                time.flags = 0;
                 time.flags |= XT_TIME_LOCAL_TZ;
                 if(me->daytime_start > me->daytime_stop)
                     time.flags |= XT_TIME_CONTIGUOUS;
